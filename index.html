@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data: blob:">
+<title>Frutiger Night Player</title>
+<link rel="stylesheet" href="styles.css">
+
+</head>
+<body>
+<div class="app" id="app">
+  <div class="bubbles" id="bubbles"></div>
+
+  <div class="bar">
+    <div class="brand"><span class="orb"></span>Frutiger Night Player</div>
+    <div class="themes" id="themes"></div>
+    <div><button class="wbtn" id="min" aria-label="Minimizar">&#8211;</button><button class="wbtn" id="max" aria-label="Maximizar">&#9633;</button><button class="wbtn x" id="close" aria-label="Cerrar">&#10005;</button></div>
+  </div>
+
+  <main>
+    <section class="stage">
+      <div class="cover" id="cover"><svg viewBox="0 0 24 24"><path d="M12 3v10.6A4 4 0 1 0 14 17V7h4V3h-6z"/></svg><img id="art" alt="Portada del álbum"></div>
+      <div class="side">
+      <div class="lcd">
+                <div class="info">
+          <div class="title" id="title">Sin canción</div>
+          <div class="sub"><span id="info">Añade tus archivos para empezar</span><span id="count">0 / 0</span></div>
+          <div class="vizwrap"><canvas id="viz"></canvas></div>
+        </div>
+      </div>
+
+      <div class="seek"><span id="cur">0:00</span><input type="range" id="seek" min="0" max="1000" value="0" aria-label="Posición"><span id="dur">0:00</span></div>
+
+      <div class="ctrl">
+        <button class="gel sm" id="shuf" title="Aleatorio" aria-label="Aleatorio"><svg viewBox="0 0 24 24"><path d="M17 3l4 4-4 4V8h-2.6l-3.1 4.4L8.6 15H3v-2h4.6l2.1-3-2.1-3H3V5h4.6l3.1 4.4L13.4 6H17V3zm0 10l4 4-4 4v-3h-3.4l-2.2-3.1 1.4-2L14.4 16H17v-3z"/></svg></button>
+        <button class="gel" id="prev" title="Anterior" aria-label="Anterior"><svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+        <button class="gel big" id="play" title="Reproducir / Pausa" aria-label="Reproducir o pausar"><svg id="pi" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+        <button class="gel" id="next" title="Siguiente" aria-label="Siguiente"><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5l11 7L4 19z"/></svg></button>
+        <button class="gel sm" id="rep" title="Repetir" aria-label="Repetir"><svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg></button>
+      </div>
+
+      <div class="vol"><span>Vol</span><input type="range" id="vol" min="0" max="100" value="80" aria-label="Volumen"></div>
+    </div>
+    </section>
+
+    <aside class="list">
+      <div class="lh"><span>Lista</span><span class="lb"><button class="add" id="add">+ Añadir</button><button class="add" id="clr">Vaciar</button></span></div>
+      <ul id="pl"></ul>
+    </aside>
+  </main>
+</div>
+<input type="file" id="file" accept="audio/*,.mp3,.flac,.m4a,.ogg" multiple hidden>
+<script src="app.js"></script>
+</body>
+</html>
