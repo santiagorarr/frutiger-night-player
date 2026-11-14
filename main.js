@@ -1,10 +1,13 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const isWin = process.platform === 'win32';
+const iconPath = isWin ? 'icon.ico' : 'icon.png';
 
 let win;
 
 function createWindow() {
   win = new BrowserWindow({
+    icon: path.join(__dirname, iconPath),
   width: 940,
 height: 500,
 minWidth: 760,

@@ -2,7 +2,63 @@ const $ = s => document.querySelector(s);
 const au = new Audio();
 let tr = [], ix = -1, shuf = false, rep = 0; // rep: 0 apagado, 1 lista, 2 una
 
-/* Burbujas de fondo */
+
+const i18n = {
+  es: {
+    noTrack: "Sin canción",
+    addFilesPrompt: "Añade tus archivos para empezar",
+    emptyList: "Arrastra tus archivos aquí<br>o pulsa «Añadir».",
+    addBtn: "+ Añadir",
+    clearBtn: "Vaciar",
+    listTitle: "Lista",
+    removeBtn: "Quitar de la lista",
+    repeatTips: ["Repetir: no", "Repetir lista", "Repetir canción"],
+    themePrefix: "Tema "
+  },
+  en: {
+    noTrack: "No track",
+    addFilesPrompt: "Add your files to start",
+    emptyList: "Drag your files here<br>or click «Add».",
+    addBtn: "+ Add",
+    clearBtn: "Clear",
+    listTitle: "Playlist",
+    removeBtn: "Remove from list",
+    repeatTips: ["Repeat: off", "Repeat playlist", "Repeat track"],
+    themePrefix: "Theme "
+  }
+};
+
+let currentLang = 'es';
+try { currentLang = localStorage.getItem('lang') || 'es'; } catch (_) {}
+
+function applyLanguage(lang) {
+  currentLang = lang;
+  try { localStorage.setItem('lang', lang); } catch (_) {}
+
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    if (i18n[lang][key]) el.textContent = i18n[lang][key];
+  });
+
+  if (ix < 0) {
+    $('#title').textContent = i18n[lang].noTrack;
+    $('#info').textContent = i18n[lang].addFilesPrompt;
+  }
+
+  const langBtn = $('#btn-lang');
+  if (langBtn) langBtn.textContent = lang.toUpperCase() === 'ES' ? 'EN' : 'ES';
+
+  const repBtn = $('#rep');
+  if (repBtn) repBtn.title = i18n[lang].repeatTips[rep];
+
+  render();
+}
+
+/* Evento para cambiar de idioma */
+$('#btn-lang').onclick = () => {
+  applyLanguage(currentLang === 'es' ? 'en' : 'es');
+};
+
 (() => {
   const b = $('#bubbles');
   for (let i = 0; i < 16; i++) {
@@ -12,17 +68,14 @@ let tr = [], ix = -1, shuf = false, rep = 0; // rep: 0 apagado, 1 lista, 2 una
   }
 })();
 
-/* Controles de ventana */
 $('#min').onclick = () => window.winCtl && winCtl.min();
 $('#max').onclick = () => window.winCtl && winCtl.max();
-$('#close').onclick = () => window.winCtl ? winCtl.close() : window.close();
+$('#close').onclick = () => window.winCtl ? window.winCtl.close() : window.close();
 
-/* Utilidades */
 const fmt = t => isFinite(t) ? Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0') : '0:00';
 const setP = (el, v, max) => el.style.setProperty('--p', (v / max * 100) + '%');
 const ICON_PLAY = '<path d="M8 5v14l11-7z"/>', ICON_PAUSE = '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
 
-/* Lista */
 function addFiles(files) {
   [...files].filter(f => f.type.startsWith('audio') || /\.(mp3|flac|wav|ogg|m4a|opus)$/i.test(f.name)).forEach(f => {
     const t = { name: f.name.replace(/\.[^.]+$/, ''), url: URL.createObjectURL(f) };
@@ -33,14 +86,15 @@ function addFiles(files) {
 }
 function render() {
   const pl = $('#pl');
-  if (!tr.length) { pl.innerHTML = '<div class="empty">Arrastra tus archivos aquí<br>o pulsa «Añadir».</div>'; }
-  else {
+  if (!tr.length) { 
+    pl.innerHTML = `<div class="empty">${i18n[currentLang].emptyList}</div>`; 
+  } else {
     pl.innerHTML = '';
     tr.forEach((t, i) => {
       const li = document.createElement('li');
       const nm = t.title ? (t.artist ? t.artist + ' – ' + t.title : t.title) : t.name;
       const sp = document.createElement('span'); sp.className = 'nm'; sp.textContent = (i + 1) + '. ' + nm;
-      const rm = document.createElement('button'); rm.className = 'rm'; rm.textContent = '×'; rm.title = 'Quitar de la lista';
+      const rm = document.createElement('button'); rm.className = 'rm'; rm.textContent = '×'; rm.title = i18n[currentLang].removeBtn;
       rm.onclick = e => { e.stopPropagation(); removeAt(i); };
       li.append(sp, rm);
       li.title = nm;
@@ -58,7 +112,7 @@ function load(i, play) {
   if (play) { initA(); au.play(); }
 }
 
-/* Etiquetas ID3 (título, artista, álbum y portada) */
+/* Etiquetas ID3 y FLAC */
 const sync = (dv, o) => (dv.getUint8(o) << 21) | (dv.getUint8(o + 1) << 14) | (dv.getUint8(o + 2) << 7) | dv.getUint8(o + 3);
 function dec(u8, enc) {
   let label = 'windows-1252';
@@ -69,19 +123,19 @@ function dec(u8, enc) {
 }
 function pic(d, v2) {
   const enc = d[0]; let p = 1;
-  if (v2) p = 4; else { while (p < d.length && d[p] !== 0) p++; p++; }   // tipo MIME
-  p++;                                                                   // tipo de imagen
+  if (v2) p = 4; else { while (p < d.length && d[p] !== 0) p++; p++; } 
+  p++; 
   if (enc === 1 || enc === 2) { while (p + 1 < d.length && !(d[p] === 0 && d[p + 1] === 0)) p += 2; p += 2; }
-  else { while (p < d.length && d[p] !== 0) p++; p++; }                  // descripción
+  else { while (p < d.length && d[p] !== 0) p++; p++; } 
   if (p >= d.length) return null;
   const mime = d[p] === 0x89 ? 'image/png' : 'image/jpeg';
   return URL.createObjectURL(new Blob([d.subarray(p)], { type: mime }));
 }
-/* FLAC: textos (Vorbis comment) y portada (PICTURE) */
+
 async function readFlac(file) {
   const out = {};
   try {
-    let pos = 4;                                   // salta las letras "fLaC"
+    let pos = 4; 
     while (pos < file.size) {
       const hd = new DataView(await file.slice(pos, pos + 4).arrayBuffer());
       const last = hd.getUint8(0) & 0x80, type = hd.getUint8(0) & 0x7F;
@@ -90,8 +144,8 @@ async function readFlac(file) {
       if (type === 4 || (type === 6 && !out.cover)) {
         const buf = await file.slice(pos, pos + len).arrayBuffer();
         const dv = new DataView(buf), u = new Uint8Array(buf);
-        if (type === 4) {                          // textos: TITLE=..., ARTIST=...
-          let p = 4 + dv.getUint32(0, true);       // salta el "vendor"
+        if (type === 4) { 
+          let p = 4 + dv.getUint32(0, true); 
           const n = dv.getUint32(p, true); p += 4;
           for (let i = 0; i < n; i++) {
             const l = dv.getUint32(p, true); p += 4;
@@ -103,18 +157,18 @@ async function readFlac(file) {
             else if (key === 'ARTIST') out.artist = val;
             else if (key === 'ALBUM') out.album = val;
           }
-        } else {                                   // portada
+        } else { 
           let p = 4;
-          p += 4 + dv.getUint32(p);                // salta el tipo MIME
-          p += 4 + dv.getUint32(p);                // salta la descripción
-          p += 16;                                 // ancho, alto, profundidad, colores
+          p += 4 + dv.getUint32(p); 
+          p += 4 + dv.getUint32(p); 
+          p += 16; 
           const n = dv.getUint32(p); p += 4;
           const img = u.subarray(p, p + n);
           out.cover = URL.createObjectURL(new Blob([img], { type: img[0] === 0x89 ? 'image/png' : 'image/jpeg' }));
         }
       }
       pos += len;
-      if (last) break;                             // era el último bloque
+      if (last) break; 
     }
   } catch (_) {}
   return out;
@@ -157,7 +211,6 @@ function show(t) {
   $('#cover').classList.toggle('has', !!t.cover);
 }
 
-/* Reproducción */
 function toggle() {
   if (ix < 0) return $('#file').click();
   initA();
@@ -191,15 +244,19 @@ $('#play').onclick = toggle;
 $('#next').onclick = () => next(false);
 $('#prev').onclick = prev;
 $('#shuf').onclick = e => { shuf = !shuf; e.currentTarget.classList.toggle('on', shuf); };
-$('#rep').onclick = e => { rep = (rep + 1) % 3; e.currentTarget.classList.toggle('on', rep > 0); e.currentTarget.title = ['Repetir: no', 'Repetir lista', 'Repetir canción'][rep]; };
+$('#rep').onclick = e => { 
+  rep = (rep + 1) % 3; 
+  e.currentTarget.classList.toggle('on', rep > 0); 
+  e.currentTarget.title = i18n[currentLang].repeatTips[rep]; 
+};
 $('#add').onclick = () => $('#file').click();
 $('#file').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
 
 /* Quitar canciones */
 function freeTrack(t) { URL.revokeObjectURL(t.url); if (t.cover) URL.revokeObjectURL(t.cover); }
 function resetUI() {
-  $('#title').textContent = 'Sin canción';
-  $('#info').textContent = 'Añade tus MP3 para empezar';
+  $('#title').textContent = i18n[currentLang].noTrack;
+  $('#info').textContent = i18n[currentLang].addFilesPrompt;
   $('#cover').classList.remove('has'); $('#art').removeAttribute('src');
   $('#cur').textContent = $('#dur').textContent = '0:00';
   $('#seek').value = 0; setP($('#seek'), 0, 1000);
@@ -218,7 +275,6 @@ function removeAt(i) {
 }
 $('#clr').onclick = clearAll;
 
-/* Temas de color */
 const C = {}, THEMES = ['aqua', 'negro', 'gris', 'rojo'];
 function setTheme(n) {
   if (!THEMES.includes(n)) n = 'aqua';
@@ -230,15 +286,13 @@ function setTheme(n) {
 }
 THEMES.forEach(n => {
   const b = document.createElement('button');
-  b.className = 'dot'; b.dataset.t = n; b.title = 'Tema ' + n; b.setAttribute('aria-label', 'Tema ' + n);
+  b.className = 'dot'; b.dataset.t = n; b.title = i18n[currentLang].themePrefix + n; b.setAttribute('aria-label', i18n[currentLang].themePrefix + n);
   b.onclick = () => setTheme(n); $('#themes').appendChild(b);
 });
-
 
 addEventListener('dragover', e => { e.preventDefault(); $('#app').classList.add('drop'); });
 addEventListener('dragleave', () => $('#app').classList.remove('drop'));
 addEventListener('drop', e => { e.preventDefault(); $('#app').classList.remove('drop'); addFiles(e.dataTransfer.files); });
-
 
 addEventListener('keydown', e => {
   if (e.code === 'Space') { e.preventDefault(); toggle(); }
@@ -277,10 +331,12 @@ function draw() {
     grad.addColorStop(0, C.top); grad.addColorStop(.35, C.ac); grad.addColorStop(1, C.g2);
     g.shadowColor = C.ac; g.shadowBlur = 10 * dpr; g.fillStyle = grad;
     g.beginPath(); g.roundRect(x, base - bh, bw, bh, bw / 2.5); g.fill();
-    // reflejo
     g.shadowBlur = 0; g.globalAlpha = .22; g.fillStyle = C.ac;
     g.beginPath(); g.roundRect(x, base + 3 * dpr, bw, bh * .45, bw / 2.5); g.fill(); g.globalAlpha = 1;
   }
 }
+
 try { setTheme(localStorage.getItem('theme')); } catch (_) { setTheme('aqua'); }
-draw(); render();
+applyLanguage(currentLang); 
+draw(); 
+render();
